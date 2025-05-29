@@ -1772,7 +1772,7 @@ Configure the [Hotkeys](https://www.alfredapp.com/help/workflows/triggers/hotkey
 		</dict>
 	</array>
 	<key>version</key>
-	<string>2025.0</string>
+	<string>2025.1</string>
 	<key>webaddress</key>
 	<string>https://github.com/vitorgalvao/wordsmith-workflow/</string>
 </dict>
