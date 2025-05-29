@@ -1,0 +1,37 @@
+#!/usr/bin/python3
+
+import argparse
+from pathlib import Path
+import sqlite3
+import xml.etree.ElementTree as ET
+
+# Arguments
+parser = argparse.ArgumentParser(description="Convert macOS Oxford Dictionary of English XML to SQLite.")
+parser.add_argument("input", type=Path, help="Path to the XML file to parse.")
+parser.add_argument("output", type=Path, help="Path to the SQLite file to save.")
+args = parser.parse_args()
+
+# Delete previous database
+Path.unlink(args.output, missing_ok=True)
+
+# Prepare new database
+xml = ET.parse(args.input)
+database = sqlite3.connect(args.output)
+cursor = database.cursor()
+cursor.execute("CREATE TABLE definitions (word TEXT NOT NULL, definition TEXT NOT NULL);")
+
+# Grab data
+namespaces = {"d": "http://www.apple.com/DTDs/DictionaryService-1.0.rng"}
+
+for entry in xml.findall(".//d:entry", namespaces):
+    title_raw = entry.get("{http://www.apple.com/DTDs/DictionaryService-1.0.rng}title")
+    if title_raw is None or title_raw.startswith("-") or title_raw.endswith("-"): continue
+    title_clean = ' '.join(word.capitalize() for word in title_raw.split()).strip()
+
+    for definition in entry.findall(".//span[@d:def='1']", namespaces):
+        definition_raw = ''.join(definition.itertext()).strip()
+        if definition_raw is None: continue
+        definition_clean = definition_raw.capitalize() + ("." if not definition_raw.endswith(".") else "")
+        cursor.execute("INSERT INTO definitions (word, definition) VALUES (?, ?);", (title_clean, definition_clean))
+
+database.commit()

@@ -1,0 +1,58 @@
+#!/usr/bin/python3
+
+# Adapted from https://github.com/mr-pennyworth/alfred-better-dictionaries/blob/main/pyapp/appledict.py
+# Previous version based on https://github.com/JadedTuna/apple-dictionary
+# See also https://fmentzer.github.io/posts/2020/dictionary/
+
+import io
+import struct
+import typing
+import zlib
+import argparse
+from pathlib import Path
+
+def read_int(f: typing.BinaryIO) -> int:
+    return struct.unpack("i", f.read(4))[0]
+
+def sections(body_data_filepath: str) -> typing.Iterable[bytes]:
+    with open(body_data_filepath, "rb") as f:
+        f.seek(0x40)
+        limit = 0x40 + read_int(f)
+
+        if (read_int(f), read_int(f)) == (0, -1):
+            f.seek(0x60)
+        else:
+            f.seek(0x44)
+
+        while f.tell() < limit:
+            compressed_size = read_int(f) - 8
+            _ = f.read(4)  # Skip unknown bytes
+            decompressed_size = read_int(f)
+            decompressed = zlib.decompress(f.read(compressed_size))
+            yield decompressed[:decompressed_size]
+
+def definitions(body_data_filepath: str) -> typing.Iterable[str]:
+    for section in sections(body_data_filepath):
+        opening_tag = b"<d:entry"
+
+        if section[: len(opening_tag)] == opening_tag:
+            yield section.decode("utf-8")
+        else:
+            section_size = len(section)
+            section_io = io.BytesIO(section)
+            while section_io.tell() < section_size:
+                defn_size = read_int(section_io)
+                yield section_io.read(defn_size).decode("utf-8")
+
+parser = argparse.ArgumentParser(description="Parse a macOS dictionary file to XML.")
+parser.add_argument('input', type=Path, help="Path to the .dictionary bundle to parse.")
+parser.add_argument('output', type=Path, help="Path to the XML file to save.")
+args = parser.parse_args()
+
+with open(args.output, "w") as f:
+    f.write("<root>\n")
+
+    for definition in definitions(args.input / "Contents" / "Resources" / "Body.data"):
+        f.write(definition)
+
+    f.write("</root>")

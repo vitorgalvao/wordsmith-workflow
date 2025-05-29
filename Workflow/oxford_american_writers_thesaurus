@@ -1,0 +1,56 @@
+#!/usr/bin/python3
+
+import argparse
+from pathlib import Path
+import sqlite3
+import xml.etree.ElementTree as ET
+
+import sys
+
+# Arguments
+parser = argparse.ArgumentParser(description="Convert macOS Oxford American Writer's Thesaurus XML to SQLite.")
+parser.add_argument("input", type=Path, help="Path to the XML file to parse.")
+parser.add_argument("output", type=Path, help="Path to the SQLite file to save.")
+args = parser.parse_args()
+
+# Delete previous database
+Path.unlink(args.output, missing_ok=True)
+
+# Prepare new database
+xml = ET.parse(args.input)
+database = sqlite3.connect(args.output)
+cursor = database.cursor()
+cursor.execute("CREATE TABLE thesaurus (word TEXT NOT NULL, phrase TEXT, main TEXT NOT NULL, synonyms TEXT, antonyms TEXT);")
+
+# Grab data
+namespaces = {"d": "http://www.apple.com/DTDs/DictionaryService-1.0.rng"}
+
+for entry in xml.findall(".//d:entry", namespaces):
+    title_raw = entry.get("{http://www.apple.com/DTDs/DictionaryService-1.0.rng}title")
+    if title_raw is None or title_raw.startswith("-") or title_raw.endswith("-"): continue
+    title_clean = ' '.join(word.capitalize() for word in title_raw.split()).strip()
+
+    for span in entry.findall('.//span'):
+        span_classes = span.attrib.get("class")
+        if span_classes is None or "msThes" not in span_classes.split(): continue
+
+        example_tag = span.find(".//span[@class='ex']")
+        example_raw = ''.join(example_tag.itertext()).strip().capitalize() if example_tag is not None else None
+        example_clean = example_raw + ("." if not example_raw.endswith(".") else "") if example_raw else None
+
+        # When a main synonym does not exist, pop the first one from other synonyms
+        syns_tags = span.findall(".//span[@class='syn']")
+        main_syns_tags = span.findall(".//span[@class='syn t_core']") or [syns_tags.pop(0)]
+
+        syns_raw = list(map(lambda x: x.text.strip().capitalize(), syns_tags)) if syns_tags is not None else None
+        main_syns_raw = list(map(lambda x: x.text.strip().capitalize(), main_syns_tags))
+        syns_clean = ', '.join(syns_raw) if syns_raw else None
+        main_syns_clean = ', '.join(main_syns_raw)
+
+        ants_tags = span.findall(".//span[@class='ant']")
+        ants_raw = list(map(lambda x: x.text.strip().capitalize(), ants_tags)) if ants_tags is not None else None
+        ants_clean = ', '.join(ants_raw) if ants_raw else None
+
+        cursor.execute("INSERT INTO thesaurus (word, phrase, main, synonyms, antonyms) VALUES (?, ?, ?, ?, ?);", (title_clean, example_clean, main_syns_clean, syns_clean, ants_clean))
+
+database.commit()
