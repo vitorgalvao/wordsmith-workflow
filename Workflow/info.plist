@@ -927,38 +927,6 @@ readonly capitalised="${(C)word}"
 		<dict>
 			<key>config</key>
 			<dict>
-				<key>conditions</key>
-				<array>
-					<dict>
-						<key>inputstring</key>
-						<string></string>
-						<key>matchcasesensitive</key>
-						<false/>
-						<key>matchmode</key>
-						<integer>0</integer>
-						<key>matchstring</key>
-						<string></string>
-						<key>outputlabel</key>
-						<string>Not Found</string>
-						<key>uid</key>
-						<string>97B2CB02-FB9A-46CA-B423-0697B1509DB3</string>
-					</dict>
-				</array>
-				<key>elselabel</key>
-				<string></string>
-				<key>hideelse</key>
-				<true/>
-			</dict>
-			<key>type</key>
-			<string>alfred.workflow.utility.conditional</string>
-			<key>uid</key>
-			<string>FC9ACA18-B105-4B7E-905C-33B97A55DD98</string>
-			<key>version</key>
-			<integer>1</integer>
-		</dict>
-		<dict>
-			<key>config</key>
-			<dict>
 				<key>availableviaurlhandler</key>
 				<false/>
 				<key>triggerid</key>
@@ -1710,13 +1678,6 @@ Configure the [Hotkeys](https://www.alfredapp.com/help/workflows/triggers/hotkey
 			<real>800</real>
 			<key>ypos</key>
 			<real>330</real>
-		</dict>
-		<key>FC9ACA18-B105-4B7E-905C-33B97A55DD98</key>
-		<dict>
-			<key>xpos</key>
-			<real>835</real>
-			<key>ypos</key>
-			<real>665</real>
 		</dict>
 		<key>FF40A4F0-2023-4934-BC46-64046BB5F4E4</key>
 		<dict>
