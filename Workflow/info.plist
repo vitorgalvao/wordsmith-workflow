@@ -640,7 +640,7 @@ readonly capitalised="${(C)word}"
   ".param set :query '${capitalised}'" \
   "SELECT JSON_OBJECT('items', JSON_GROUP_ARRAY(JSON_OBJECT(
     'title', main,
-    'subtitle', synonyms,
+    'subtitle', IIF(synonyms IS NOT NULL, synonyms, '[Single synonym]'),
     'arg', IIF(synonyms IS NOT NULL, main || ', ' || synonyms, main),
     'mods', JSON_OBJECT(
       'shift', JSON_OBJECT('subtitle', 'Open “' || :query || '” in dictionary', 'arg', :query),
